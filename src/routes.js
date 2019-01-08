@@ -7,7 +7,7 @@ require('dotenv').config();
 const routes = Router();
 
 routes.get('/', (req, res) => {
-  res.render('index', { title: 'Express Babel' });
+  res.render('index', { title: 'Multiple chromium instance testing' });
 });
 
 routes.get('/multi-user-test', async (req, res) => {
@@ -47,7 +47,7 @@ routes.get('/multi-user-test', async (req, res) => {
           await page.waitFor("div.pull-right-lg.pull-right-md.ocr-count-holder > p.font-small.fw-500", { timeout: 80000 });
           const path = 'OCR' + Date.now() + '.png';
           await page.screenshot({ path: `screenshots/${path}` });
-          console.log(`Screenshot of the OCR page of user ${data.split('|')[1]} saved: ${path}`);
+          console.log(`Screenshot of the OCR page of user ${data.split('|')[1]} saved to: ${path}`);
         }
 
         catch (error) {
