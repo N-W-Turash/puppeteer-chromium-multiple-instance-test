@@ -3,6 +3,7 @@ import request from 'request';
 import puppeteer from 'puppeteer';
 import { Cluster } from 'puppeteer-cluster';
 require('dotenv').config();
+require('events').EventEmitter.defaultMaxListeners = 25;
 
 const routes = Router();
 
@@ -19,7 +20,7 @@ routes.get('/multi-user-test', async (req, res) => {
     try {
       const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_BROWSER,
-        maxConcurrency: 4,
+        maxConcurrency: 10,
         puppeteerOptions: {
           headless: false
         },
@@ -30,7 +31,7 @@ routes.get('/multi-user-test', async (req, res) => {
 
       // Define a task (in this case: screenshot of page)
       await cluster.task(async ({ page, data: data }) => {
-        await page.goto(data.split('|')[0]);
+        await page.goto(data.split('|')[0]); // https://www.gigatextreader.com/sign-in
 
         try {
           const emailSelector = "#email";
@@ -43,9 +44,9 @@ routes.get('/multi-user-test', async (req, res) => {
           await page.keyboard.type(data.split('|')[2]);
           await page.click(buttonSelector);
           await page.waitForNavigation({ timeout: 80000 });
-          await page.goto(process.env.PAGE_URL);
+          await page.goto(process.env.PAGE_URL); // https://www.gigatextreader.com/ocr
           await page.waitFor("div.pull-right-lg.pull-right-md.ocr-count-holder > p.font-small.fw-500", { timeout: 80000 });
-          const path = 'OCR' + Date.now() + '.png';
+          const path = 'ocr_' + data.split('|')[1] + Date.now() + '.png';
           await page.screenshot({ path: `screenshots/${path}` });
           console.log(`Screenshot of the OCR page of user ${data.split('|')[1]} saved to: ${path}`);
         }
@@ -61,10 +62,17 @@ routes.get('/multi-user-test', async (req, res) => {
       await cluster.queue(`${url}|${process.env.USER_TWO}|${process.env.PASS_TWO}`);
       await cluster.queue(`${url}|${process.env.USER_THREE}|${process.env.PASS_THREE}`);
       await cluster.queue(`${url}|${process.env.USER_FOUR}|${process.env.PASS_FOUR}`);
+      await cluster.queue(`${url}|${process.env.USER_FIVE}|${process.env.PASS_FIVE}`);
+
+      await cluster.queue(`${url}|${process.env.USER_ONE}|${process.env.PASS_ONE}`);
+      await cluster.queue(`${url}|${process.env.USER_TWO}|${process.env.PASS_TWO}`);
+      await cluster.queue(`${url}|${process.env.USER_THREE}|${process.env.PASS_THREE}`);
+      await cluster.queue(`${url}|${process.env.USER_FOUR}|${process.env.PASS_FOUR}`);
+      await cluster.queue(`${url}|${process.env.USER_FIVE}|${process.env.PASS_FIVE}`);
 
       // Shutdown after everything is done
-      // await cluster.idle();
-      // await cluster.close();
+      await cluster.idle();
+      await cluster.close();
     }
 
     catch (error) {
